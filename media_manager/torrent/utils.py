@@ -32,7 +32,7 @@ def list_files_recursively(path: Path = Path(".")) -> list[Path]:
     return valid_files
 
 
-def extract_archives(files):
+def extract_archives(files: list[Path]):
     archive_types = {
         "application/zip",
         "application/x-zip-compressedapplication/x-compressed",
@@ -63,7 +63,37 @@ def get_torrent_filepath(torrent: Torrent):
     torrent_path = AllEncompassingConfig().misc.torrent_directory / torrent.title
 
     if not torrent_path.exists():
-        raise TorrentNotFoundError(torrent)
+        # if the torrent title does not exist as an exact path, try to find a path that contains all parts of the title
+
+        # match all non-word characters, including underscore
+        filename_sub_regex = r"\W|_+\s*"
+
+        # sanitize non-word characters and split the torrent title
+        torrent_title_parts: list[str] = re.sub(
+            filename_sub_regex, " ", torrent.title.lower()
+        ).split()
+
+        # get all direct-child files/directories in the torrent_directory
+        torrent_paths = AllEncompassingConfig().misc.torrent_directory.glob("*")
+
+        # return path names that contain all torrent title parts
+        torrent_path_name_matches: list[Path] = [
+            Path(path.name)
+            for path in torrent_paths
+            if all(
+                title_part in re.sub(filename_sub_regex, " ", path.name.lower())
+                for title_part in torrent_title_parts
+            )
+        ]
+
+        if len(torrent_path_name_matches) == 0:
+            raise TorrentNotFoundError(torrent)
+        elif len(torrent_path_name_matches) >= 1:
+            log.warning(
+                f"Found more than one match for torrent: {torrent.title}. Using first match."
+            )
+
+        torrent_path = torrent_path_name_matches[0]
 
     return torrent_path
 
