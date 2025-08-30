@@ -59,7 +59,7 @@ class TransmissionDownloadClient(AbstractDownloadClient):
             AllEncompassingConfig().misc.torrent_directory / indexer_result.title
         )
         try:
-            self._client.add_torrent(
+            added_torrent = self._client.add_torrent(
                 torrent=str(indexer_result.download_url),
                 download_dir=str(download_dir),
             )
@@ -67,14 +67,13 @@ class TransmissionDownloadClient(AbstractDownloadClient):
             log.info(
                 f"Successfully added torrent to Transmission: {indexer_result.title}"
             )
-
         except Exception as e:
             log.error(f"Failed to add torrent to Transmission: {e}")
             raise
 
         torrent = Torrent(
             status=TorrentStatus.unknown,
-            title=indexer_result.title,
+            title=added_torrent.name,
             quality=indexer_result.quality,
             imported=False,
             hash=torrent_hash,
