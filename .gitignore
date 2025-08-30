@@ -11,7 +11,7 @@ res/*
 media_manager/indexer/indexers/prowlarr.http
 *.egg-info
 .env
-
+typings
 
 web/cache/
 web/node_modules
