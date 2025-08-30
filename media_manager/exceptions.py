@@ -1,6 +1,8 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+from media_manager.torrent.schemas import Torrent
+
 
 class MediaAlreadyExists(Exception):
     """Raised when a show already exists"""
@@ -20,6 +22,16 @@ class NotFoundError(Exception):
     def __init__(self, message: str = "The requested entity was not found."):
         super().__init__(message)
         self.message = message
+
+    pass
+
+
+class TorrentNotFoundError(Exception):
+    """Custom exception for when a torrent is not found."""
+
+    def __init__(self, torrent: Torrent):
+        super().__init__(f"Torrent was not found with title: '{torrent.title}'")
+        self.torrent: Torrent = torrent
 
     pass
 

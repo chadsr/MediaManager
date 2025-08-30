@@ -10,6 +10,7 @@ import patoolib
 import requests
 import libtorrent
 from media_manager.config import AllEncompassingConfig
+from media_manager.exceptions import TorrentNotFoundError
 from media_manager.indexer.schemas import IndexerQueryResult
 from media_manager.torrent.schemas import Torrent
 
@@ -59,7 +60,12 @@ def extract_archives(files):
 
 
 def get_torrent_filepath(torrent: Torrent):
-    return AllEncompassingConfig().misc.torrent_directory / torrent.title
+    torrent_path = AllEncompassingConfig().misc.torrent_directory / torrent.title
+
+    if not torrent_path.exists():
+        raise TorrentNotFoundError(torrent)
+
+    return torrent_path
 
 
 def import_file(target_file: Path, source_file: Path):
@@ -83,12 +89,11 @@ def import_torrent(torrent: Torrent) -> tuple[list[Path], list[Path], list[Path]
     Returns a tuple containing: seperated video files, subtitle files, and all files found in the torrent directory.
     """
     log.info(f"Importing torrent {torrent}")
-    all_files: list[Path] = list_files_recursively(
-        path=get_torrent_filepath(torrent=torrent)
-    )
+    torrent_filepath = get_torrent_filepath(torrent=torrent)
+    all_files = list_files_recursively(path=torrent_filepath)
     log.debug(f"Found {len(all_files)} files downloaded by the torrent")
     extract_archives(all_files)
-    all_files = list_files_recursively(path=get_torrent_filepath(torrent=torrent))
+    all_files = list_files_recursively(path=torrent_filepath)
 
     video_files: list[Path] = []
     subtitle_files: list[Path] = []

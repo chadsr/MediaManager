@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from media_manager.config import AllEncompassingConfig
-from media_manager.exceptions import InvalidConfigError
+from media_manager.exceptions import InvalidConfigError, TorrentNotFoundError
 from media_manager.indexer.repository import IndexerRepository
 from media_manager.database import SessionLocal, get_session
 from media_manager.indexer.schemas import IndexerQueryResult
@@ -647,7 +647,13 @@ def import_all_movie_torrents() -> None:
                             f"torrent {t.title} is not a movie torrent, skipping import."
                         )
                         continue
-                    movie_service.import_torrent_files(torrent=t, movie=movie)
+
+                    try:
+                        movie_service.import_torrent_files(torrent=t, movie=movie)
+                    except TorrentNotFoundError:
+                        log.error(
+                            f"Torrent {t.title} files not found for movie {movie.name}."
+                        )
             except RuntimeError as e:
                 log.error(
                     f"Error importing torrent {t.title} for movie {movie.name}: {e}"

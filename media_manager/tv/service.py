@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 
 from media_manager.config import AllEncompassingConfig
 from media_manager.database import get_session
-from media_manager.exceptions import InvalidConfigError
+from media_manager.exceptions import InvalidConfigError, TorrentNotFoundError
 from media_manager.indexer.repository import IndexerRepository
 from media_manager.indexer.schemas import IndexerQueryResult
 from media_manager.indexer.schemas import IndexerQueryResultId
@@ -822,7 +822,13 @@ def import_all_show_torrents() -> None:
                             f"torrent {t.title} is not a tv torrent, skipping import."
                         )
                         continue
-                    tv_service.import_torrent_files(torrent=t, show=show)
+
+                    try:
+                        tv_service.import_torrent_files(torrent=t, show=show)
+                    except TorrentNotFoundError:
+                        log.error(
+                            f"Torrent {t.title} files not found for show {show.name}."
+                        )
             except RuntimeError as e:
                 log.error(
                     f"Error importing torrent {t.title} for show {show.name}: {e}"
