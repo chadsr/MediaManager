@@ -1,7 +1,7 @@
 import logging
 
 import qbittorrentapi
-from qbittorrentapi import Conflict409Error
+from qbittorrentapi import Conflict409Error, TorrentInfoList
 
 from media_manager.config import AllEncompassingConfig
 from media_manager.indexer.schemas import IndexerQueryResult
@@ -96,6 +96,7 @@ class QbittorrentDownloadClient(AbstractDownloadClient):
         """
         log.info(f"Attempting to download torrent: {indexer_result.title}")
         torrent_hash = get_torrent_hash(torrent=indexer_result)
+        torrent_title: str = indexer_result.title
         answer = None
 
         log.info(
@@ -108,6 +109,22 @@ class QbittorrentDownloadClient(AbstractDownloadClient):
                 urls=indexer_result.download_url,
                 save_path=indexer_result.title,
             )
+
+            try:
+                torrent_info = self.api_client.torrents_info(
+                    torrent_hashes=torrent_hash
+                )
+                if len(torrent_info) != 1:
+                    raise Exception(
+                        f"Expected exactly one torrent info match, but got {len(torrent_info)}"
+                    )
+
+                torrent_title = str(torrent_info[0].get("name"))
+            except Exception as e:
+                log.error(
+                    f"Failed to retrieve torrent name from qBittorrent, falling back to indexer_result title: {e}"
+                )
+
         finally:
             self.api_client.auth_log_out()
 
@@ -124,7 +141,7 @@ class QbittorrentDownloadClient(AbstractDownloadClient):
         # Create and return torrent object
         torrent = Torrent(
             status=TorrentStatus.unknown,
-            title=indexer_result.title,
+            title=torrent_title,
             quality=indexer_result.quality,
             imported=False,
             hash=torrent_hash,
@@ -161,7 +178,9 @@ class QbittorrentDownloadClient(AbstractDownloadClient):
         log.info(f"Fetching status for torrent: {torrent.title}")
         try:
             self.api_client.auth_log_in()
-            info = self.api_client.torrents_info(torrent_hashes=torrent.hash)
+            info = self.api_client.torrents_info(
+                torrent_hashes=torrent.hash
+            )
         finally:
             self.api_client.auth_log_out()
 
