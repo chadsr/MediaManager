@@ -18,6 +18,9 @@ log = logging.getLogger(__name__)
 
 
 def list_files_recursively(path: Path = Path(".")) -> list[Path]:
+    if path.is_file():
+        return [path]
+
     files = list(path.glob("**/*"))
     log.debug(f"Found {len(files)} entries via glob")
     valid_files = []
