@@ -92,11 +92,14 @@ def get_torrent_filepath(torrent: Torrent):
         if len(torrent_path_name_matches) == 0:
             raise TorrentNotFoundError(torrent)
         elif len(torrent_path_name_matches) >= 1:
+            log.debug(f"Torrent filepath matches: {torrent_path_name_matches}")
             log.warning(
                 f"Found more than one match for torrent: {torrent.title}. Using first match."
             )
 
         torrent_path = torrent_path_name_matches[0]
+
+        log.debug(f"Torrent filepath: {torrent_path}")
 
     return torrent_path
 
