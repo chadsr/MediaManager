@@ -28,18 +28,16 @@ config = AllEncompassingConfig().auth
 SECRET = config.token_secret
 LIFETIME = config.session_lifetime
 
+openid_client: OpenID | None = None
 if config.openid_connect.enabled:
-    openid_config = AllEncompassingConfig().auth.openid_connect
+    log.info(f"Configured OIDC provider: {config.openid_connect.name}")
     openid_client = OpenID(
         base_scopes=["openid", "email", "profile"],
-        client_id=openid_config.client_id,
-        client_secret=openid_config.client_secret,
-        name=openid_config.name,
-        openid_configuration_endpoint=openid_config.configuration_endpoint,
+        client_id=config.openid_connect.client_id,
+        client_secret=config.openid_connect.client_secret,
+        name=config.openid_connect.name,
+        openid_configuration_endpoint=config.openid_connect.configuration_endpoint,
     )
-    openid_client.base_scopes = ["openid", "email", "profile"]
-else:
-    openid_client = None
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
@@ -52,7 +50,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, uuid.UUID]):
         update_dict: dict[str, Any],
         request: Optional[Request] = None,
     ) -> None:
-        log.info(f"User {user.id} has been updated. Changes: {update_dict}")
+        log.info(f"User {user.id} has been updated.")
         if "is_superuser" in update_dict and update_dict["is_superuser"]:
             log.info(f"User {user.id} has been granted superuser privileges.")
         if "email" in update_dict:
@@ -140,7 +138,7 @@ async def create_default_admin_user():
                         admin_email = (
                             config.auth.admin_emails[0]
                             if config.auth.admin_emails
-                            else "admin@mediamanager.local"
+                            else "admin@example.com"
                         )
                         default_password = "admin"  # Simple default password
 
